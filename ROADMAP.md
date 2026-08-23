@@ -137,7 +137,54 @@ Also corrected: `HF_MODEL_CARD.md`'s presence_penalty note (added the same
 day this mistake was made) described the default as having changed when it
 no longer has — re-synced to the live HF card to match this correction.
 
-## PLAN (2026-08-22): GPTQ-based NVFP4A16 requantization — scoped, not yet run
+## RESULT (2026-08-22): GPTQ-based NVFP4A16 requantization — clean run, no measurable accuracy win
+
+Ran to completion: 5h23min (`ONESHOT_DONE in 19374.1s`), zero exceptions,
+zero RTN-fallback warnings across all 15,520 target modules (checked
+directly against the full log, not assumed) - a genuinely clean GPTQ run
+despite the MoE-Hessian-conditioning risk flagged before launch. Stripped
+size **12.4512 GiB - exact byte-for-byte match** to the shipped RTN model
+(same 47,013 tensors, same 0.8318 GiB phantom-vision-tower drop). The
+"same size, only accuracy might change" premise held exactly.
+
+Accuracy suite (`scripts/eval/eval_suite.sh`, same methodology as every
+other comparison in this repo) against the shipped RTN baseline:
+
+| | RTN (shipped) | GPTQ | discordant pairs (of n) | McNemar p |
+|---|---:|---:|---:|---:|
+| HumanEval+ | 90.85% | 89.63% | 6 / 164 | 0.68 |
+| MBPP+ | 89.95% | 89.42% | 18 / 378 | 0.81 |
+
+Paired McNemar test (same items, which model got which right - more
+powerful than comparing two independent point estimates), not just raw
+pass@1 deltas. **No statistically significant difference on either
+benchmark.** Point estimates are slightly lower for GPTQ on both, but with
+only 6 and 18 discordant pairs respectively - well under the ~40-50 this
+project's own convention (`mcnemar_compare.py`) flags as needed for 80%
+power at alpha=0.05 - this is underpowered to rule out a small real effect
+either way. Correctly reported as "no detectable difference," not "GPTQ is
+worse" or "GPTQ is equivalent."
+
+**Verdict: does not clear the bar to proceed further.** The promotion
+discipline set before this run (accuracy suite must show a real improvement
+before a SWE-bench smoke test, let alone a bounded sample or full pilot) was
+not met. Not shipped, not made the default. GPTQ+NVFP4 genuinely does beat
+RTN in the literature this project verified before running - the null
+result here is most plausibly explained by this specific model already
+having very little room left to improve (the RTN baseline's own numbers,
+90.9%/89.9%, are already close to ceiling for a 3B-active model), not by
+GPTQ underperforming its documented advantage. `quantize_kat_gptq.py`,
+`kat-50pct-nvfp4a16-gptq-stripped/`, and the eval artifacts
+(`~/eval-suite-gptq/`) are kept on disk as a documented negative result,
+same as the earlier W4A4 throughput finding - not deleted, not published.
+
+Also fixed along the way: `eval_suite.sh`'s summary loop had the same
+two-metric-spelling bug its own comment already described for `run_task`
+(`pass@1,...` vs `pass_at_1,...`) but the fix was never applied to the
+summary loop itself - silently printed a blank MBPP+ line even on a
+successful run. Fixed.
+
+## PLAN (2026-08-22): GPTQ-based NVFP4A16 requantization — scoped, not yet run [SUPERSEDED BY RESULT ABOVE]
 
 The shipped checkpoint (`quantize_kat.py`) uses `QuantizationModifier` — plain
 round-to-nearest (RTN): each weight rounded to its nearest representable

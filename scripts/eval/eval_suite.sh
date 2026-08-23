@@ -102,7 +102,12 @@ echo "=== summary ==="
 for t in humaneval_instruct humaneval_plus_instruct mbpp_plus_instruct; do
   r=$(find "${OUT}/${t}" -name 'results_*.json' 2>/dev/null | head -1)
   if [ -n "${r}" ]; then
-    s=$(grep -oE '"pass@1,[a-z_]*": *[0-9.]+' "${r}" | head -1 | grep -oE '[0-9.]+$')
+    # Same two-spelling issue run_task already accounts for: humaneval reports
+    # "pass@1,create_test", mbpp reports "pass_at_1,extract_code". This loop
+    # only matched the first spelling, so the summary silently printed a blank
+    # MBPP+ line even though run_task's own output had the real score - found
+    # 2026-08-22 comparing the GPTQ candidate against the RTN baseline.
+    s=$(grep -oE '"pass(@|_at_)1,[a-z_]*": *[0-9.]+' "${r}" | head -1 | grep -oE '[0-9.]+$')
     printf '  %-26s %s\n' "${t}" "${s}"
   else
     printf '  %-26s (no result)\n' "${t}"

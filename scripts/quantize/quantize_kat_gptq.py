@@ -57,7 +57,21 @@ GPTQ-SPECIFIC HYPERPARAMETERS
         "achieves best accuracy recovery with no runtime cost" - not a
         speed/accuracy tradeoff, just strictly better.
       - block_size=128, dampening_frac=0.01: llm-compressor 0.13.0's own
-        defaults, pinned explicitly here.
+        defaults, pinned explicitly here. Checked (not assumed) whether these
+        are safe for a 128-expert MoE: some literature on trillion-parameter
+        MoE quantization reports needing 10x higher dampening to avoid
+        Hessian breakdowns. Read llm-compressor's actual GPTQ implementation
+        (gptq_quantize.py) directly rather than guess whether that risk
+        applies here: a Cholesky/Hessian-inversion failure is already caught
+        (torch._C._LinAlgError) and falls back to plain round-to-nearest for
+        that ONE module, not a crash - worst case for any ill-conditioned
+        expert layer is "no worse than the shipped RTN baseline," not a lost
+        multi-hour run. Also, moe_calibrate_all_experts=True below already
+        gives every expert the full calibration set rather than only its
+        normally-routed fraction - the exact condition the cited severe
+        breakdowns stem from. Kept the default dampening_frac on this
+        evidence rather than pre-emptively raising it for a risk that's
+        already mitigated two other ways.
       - offload_hessians=False: llm-compressor 0.13.0's default. If this run
         OOMs during calibration, this is the first lever to flip (trades
         speed for memory) - not enabled preemptively since the memory
@@ -89,15 +103,20 @@ from transformers import AutoConfig, AutoTokenizer
 from llmcompressor import oneshot
 from llmcompressor.modifiers.quantization import GPTQModifier
 
+import os
+
 SRC = (
     pathlib.Path.home()
     / "reap-stability/n64_s42/model_--home--ttimm--models--KAT-Coder-V2.5-Dev-8ccb0b379945"
     / "dataset_theblackcat102--evol-codealpaca-v1-9d908ea05bb5/pruned_models"
     / "reap-renorm_true-seed_42-0.50"
 )
-DST = pathlib.Path.home() / "models" / "kat-50pct-nvfp4a16-gptq"
+# DST/NUM_CALIB overridable so a cheap dry run (small NUM_CALIB, throwaway DST)
+# can validate the full pipeline before committing to the real 256-sample run -
+# same model load, same code path, a fraction of the calibration cost.
+DST = pathlib.Path(os.environ.get("GPTQ_DST", str(pathlib.Path.home() / "models" / "kat-50pct-nvfp4a16-gptq")))
 
-NUM_CALIB = 256
+NUM_CALIB = int(os.environ.get("GPTQ_NUM_CALIB", "256"))
 MAX_SEQ = 2048
 
 print(f"source : {SRC}", flush=True)

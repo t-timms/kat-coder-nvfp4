@@ -9,20 +9,26 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-- **Scoped a GPTQ-based NVFP4A16 requantization (`scripts/quantize/quantize_kat_gptq.py`),
-  not yet run.** The shipped checkpoint uses plain round-to-nearest (RTN)
-  quantization; GPTQ corrects each layer for the error its own rounding
-  introduces, via a Hessian-based least-squares pass. Verified before
-  scoping, not assumed: GPTQ+NVFP4 has shipped in llm-compressor since
-  v0.10.0, and 2026 literature confirms GPTQ "consistently outperforms RTN"
-  for NVFP4 recovery. A newer method (MR-GPTQ, arXiv 2509.23202) claims
-  better recovery still but is not usable — its llm-compressor integration
-  is an open, unimplemented RFC as of 2026-08-22, tracked as a future watch
-  item instead. Same file size and scheme as the shipped build; the
-  calibration set, seed, and `MAX_SEQ` are deliberately unchanged from
-  `quantize_kat.py` so this isolates the quantization algorithm as the only
-  variable. Full plan, verification detail, and go/no-go criteria in
-  `ROADMAP.md`'s dated entry.
+- **Tried a GPTQ-based NVFP4A16 requantization (`scripts/quantize/quantize_kat_gptq.py`)
+  — clean run, no measurable accuracy win, not shipped.** The shipped
+  checkpoint uses plain round-to-nearest (RTN); GPTQ corrects each layer for
+  the error its own rounding introduces, via a Hessian-based least-squares
+  pass. Verified before running, not assumed: GPTQ+NVFP4 has shipped in
+  llm-compressor since v0.10.0, and 2026 literature confirms GPTQ
+  "consistently outperforms RTN" for NVFP4 recovery in general. Ran to
+  completion in 5h23min, zero exceptions, zero RTN-fallback warnings across
+  all 15,520 target modules; stripped size 12.4512 GiB, an exact
+  byte-for-byte match to the shipped model. But the accuracy suite showed
+  **no statistically significant difference** on either benchmark (paired
+  McNemar: HumanEval+ p=0.68 at 6/164 discordant pairs, MBPP+ p=0.81 at
+  18/378 — both underpowered to fully rule out a small real effect, but
+  neither showing one). Did not clear the bar set before running (accuracy
+  improvement required before any SWE-bench testing), so not shipped, not
+  the default. Kept on disk as a documented negative result, same treatment
+  as the earlier W4A4 throughput finding. Full writeup, including why a null
+  result here is plausible (this model's RTN baseline may already be close
+  to its accuracy ceiling) rather than contradicting the literature:
+  `ROADMAP.md`'s RESULT entry.
 
 - **Added `presence_penalty` and `top_k` to `kat_overrides_sota.yaml`,
   completing the base model's own documented sampling recommendation.**
@@ -182,6 +188,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   selected explicitly, never silently the default. `sync_configs.sh` was also
   missing this new file from its hardcoded sync list — fixed. `HF_MODEL_CARD.md`
   re-synced to match. Full explanation: `ROADMAP.md`'s dated correction entry.
+- **`eval_suite.sh`'s summary loop silently printed a blank MBPP+ line on
+  successful runs.** Same two-metric-spelling issue the script's own comment
+  already described for `run_task` (`pass@1,...` vs `pass_at_1,...`), but
+  the fix was only ever applied to `run_task`, not the summary loop below
+  it. Found comparing the GPTQ candidate against the RTN baseline — the
+  per-task line had the real MBPP+ score, the summary section didn't.
 - **`docs/environment.md` documented an unreproducible build.** It instructed
   cloning upstream `CerebrasResearch/reap`, but the release was built from
   `t-timms/reap-cuda` at `2954ba3`, which carries the router-renormalization fix.

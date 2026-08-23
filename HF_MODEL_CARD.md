@@ -97,16 +97,16 @@ submit at all. This is disclosed as a real result, not an excuse: 52.0% is the
 correct number to cite; the breakdown above is the correct context for
 interpreting it.
 
-**Config note (2026-08-22):** `kat_overrides_sota.yaml` — the config behind
+**Config note (2026-08-23):** `kat_overrides_sota.yaml` — the config behind
 the 52.0% figure above — is kept byte-identical to the run that produced it;
 a fresh clone reproduces this exact result by default. A candidate change
 (`presence_penalty`/`top_k`, completing this base model's own documented
-sampling recommendation — see "Usage" below) is available as a separate,
-explicitly-selected opt-in config, not the default: tested on one instance
-with repeated draws, it measurably suppressed a genuine repetition-loop
-failure, but has **not been full-pilot re-validated**, so no updated
-SWE-bench score exists to cite for it yet. It is only promoted into the
-default config if and when it clears that same bar.
+sampling recommendation) was tested full-pilot on the same 50 instances and
+**regressed the score to 24/50 = 48.0%** — more instances ran out of the
+turn budget exploring alternatives (`LimitsExceeded` 0→8) than were saved
+from the context ceiling (`ContextWindowExceeded` 17→14). Not promoted;
+`kat_overrides_sota.yaml` is unchanged. Kept in the repo as a documented
+negative result (`kat_overrides_sota_presence_penalty.yaml`), not deleted.
 
 ## Prior art and scope of claims
 
@@ -149,7 +149,7 @@ architectures) and native tool calling for agentic use:
 ```bash
 vllm serve Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16 \
   --served-model-name kat-16gb \
-  --max-model-len 32768 --max-num-seqs 8 \
+  --max-model-len 49152 --max-num-seqs 2 \
   --gpu-memory-utilization 0.92 --kv-cache-dtype fp8 \
   --reasoning-parser qwen3 \
   --enable-auto-tool-choice --tool-call-parser qwen3_xml \
@@ -169,11 +169,12 @@ values fail intermittently rather than at startup.
 **Sampling**: `temperature=1.0, top_p=0.95` is what the published SWE-bench
 result used and is the current recommendation. `Kwaipilot/KAT-Coder-V2.5-Dev`'s
 own model card documents two more params alongside these,
-`presence_penalty=1.5, top_k=20`, for Thinking mode — early agentic testing
-on this checkpoint found they measurably suppress a genuine repetition-loop
-failure (see the SWE-bench config note above), but that finding is one
-instance, not full-pilot validated, so it's a candidate worth trying rather
-than a settled recommendation yet.
+`presence_penalty=1.5, top_k=20`, for Thinking mode. Tested on this
+checkpoint: on a single instance it suppressed a genuine repetition-loop
+failure, but a full-pilot test on 50 instances found the net effect
+regresses the agentic score (see the SWE-bench config note above) — not
+recommended for agentic use on this checkpoint despite matching the base
+model's own documented config.
 
 ## Evaluation
 
@@ -230,7 +231,7 @@ checkpoint is faster on this hardware and is what we default to; the W4A4
 build is a legitimate alternative if the native FP4 execution path matters
 more for your use case. Only single-stream (batch=1) decode was measured.
 Full writeup:
-[`ROADMAP.md`](https://github.com/t-timms/moe-pruning-nvfp4/blob/main/ROADMAP.md)'s
+[`ROADMAP.md`](https://github.com/t-timms/kat-coder-nvfp4/blob/main/ROADMAP.md)'s
 RESULT section in the release repo.
 
 ## License

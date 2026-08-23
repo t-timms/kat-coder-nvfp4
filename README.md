@@ -64,7 +64,7 @@ Status below.
 | Rollout throughput (`max_num_seqs` 2→8) | done, tested — 1.86x concurrency, no score impact |
 | Context ceiling raised 32K→49K (`max_model_len`, `max_num_seqs` 8→2) | done, validated on the full 50-instance pilot — see Results above |
 | Context-*budget* experiment (opt-in, reduces `max_tokens` instead of raising the ceiling) | scaffolded, still unvalidated, a different lever than the one above — see `kat_overrides_context_managed.yaml` |
-| `presence_penalty`/`top_k`, completing the model's documented sampling recommendation | candidate — its own file (`kat_overrides_sota_presence_penalty.yaml`), **not the default**, tested single-instance with repeated draws (suppressed a real repetition-loop failure, but submission rate below the shipped default's 2/3 rate on that same instance across two follow-on prompt-engineering attempts — see `t-timms/kat-coder-16gb-serving-experiments`). Full-pilot re-validation is the bar for promotion to default |
+| `presence_penalty`/`top_k`, completing the model's documented sampling recommendation | tried — full-pilot validated 2026-08-23, **regresses the score** (24/50 = 48.0% vs. the shipped 26/50 = 52.0%, same 50 instances via mini-swe-agent's fixed shuffle seed). More instances hit `LimitsExceeded` (0→8) than were saved from `ContextWindowExceeded` (17→14). Not promoted — `kat_overrides_sota.yaml` unchanged. See `ROADMAP.md`'s RESULT entry |
 | Release checkpoint on Hugging Face | published — [`Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16) |
 | W4A4 (native FP4 kernels) alternative build | published, see below |
 | GPTQ-based NVFP4A16 requantization (same size, different rounding algorithm) | tried — clean run, exact size match (12.4512 GiB), but the accuracy suite showed **no statistically significant difference** vs. the shipped RTN model (paired McNemar, both benchmarks). Not shipped, not the default — see `ROADMAP.md`'s RESULT entry |
@@ -157,18 +157,17 @@ the 52.0% figure above — a fresh clone with no `KAT_CONFIG` override
 reproduces that exact result. To reproduce the original 32K/40.0% baseline
 instead, run `MAXLEN=32768 MAXSEQS=8 KAT_CONFIG=kat_overrides.yaml bash
 scripts/swebench/run_pilot_all.sh 50`. Two other configs are available,
-neither the default and neither full-pilot validated —
+neither the default and neither an improvement —
 `KAT_CONFIG=kat_overrides_context_managed.yaml` (reduces `max_tokens` instead
-of raising the context ceiling) and
+of raising the context ceiling; unvalidated) and
 `KAT_CONFIG=kat_overrides_sota_presence_penalty.yaml` (completes the base
 model's own documented sampling recommendation — `presence_penalty`, `top_k`
-— measurably fixed a repetition-loop failure on one tested instance; see
-that file's header before citing any result from it). A change is only
-promoted into `kat_overrides_sota.yaml` itself once it clears the same
-full-pilot bar 52.0% did — that happened once already
-(`presence_penalty`/`top_k` briefly lived in this file on single-instance
-evidence, reverted the same day) and won't happen again without the scale of
-evidence to back it.
+— full-pilot validated 2026-08-23 at 24/50 = 48.0%, a regression from 52.0%;
+see `ROADMAP.md`'s RESULT entry). A change is only promoted into
+`kat_overrides_sota.yaml` itself once it clears the same full-pilot bar
+52.0% did — one candidate was briefly merged into this file on
+single-instance evidence and reverted the same day before full-pilot
+testing, and the full-pilot test then confirmed reverting it was correct.
 
 **7. Run HumanEval / MBPP+ (non-agentic accuracy)**
 

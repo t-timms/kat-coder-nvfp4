@@ -9,6 +9,21 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **Full-pilot tested `presence_penalty`/`top_k` — regresses the score, not
+  promoted.** 50-instance pilot on the identical instance set as the 52.0%
+  baseline (`--shuffle` is deterministically seeded in mini-swe-agent, so
+  both runs drew the same 50 instances - confirmed against its source
+  before trusting the comparison). Result: **24/50 = 48.0%, down from
+  26/50 = 52.0%.** `LimitsExceeded` failures rose from ~0 to 8 as instances
+  exhausted the fixed 65-step turn budget exploring alternatives instead of
+  repeating verbatim, more than offsetting a modest drop in
+  `ContextWindowExceeded` (17→14) and a small quality improvement on
+  attempts that did complete (85.7% vs 81.25% resolved-of-completed).
+  `kat_overrides_sota.yaml` is unchanged and remains the best validated
+  config - this result confirms the promotion-discipline correction earlier
+  this week was the right call, not just a process nicety. Full breakdown:
+  `ROADMAP.md`'s RESULT entry.
+
 - **Tried a GPTQ-based NVFP4A16 requantization (`scripts/quantize/quantize_kat_gptq.py`)
   — clean run, no measurable accuracy win, not shipped.** The shipped
   checkpoint uses plain round-to-nearest (RTN); GPTQ corrects each layer for

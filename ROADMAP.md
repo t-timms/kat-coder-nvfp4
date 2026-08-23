@@ -96,17 +96,16 @@ context-failure or completion-quality effect — so the context-*budget*
 config (`kat_overrides_context_managed.yaml`, reduces `max_tokens` instead
 of raising the ceiling) targets a different mechanism than what actually
 drove this result, and shouldn't be assumed to help without its own test.
-The 17 remaining `ContextWindowExceeded` instances are a candidate list for
-two things now under separate investigation in
-`t-timms/kat-coder-16gb-serving-experiments`: (1) the chat-template
-experiment (mixed/inconclusive on a diverse sample — see that repo's
-`chat-template/NOTES.md`, do not adopt yet) and (2) a real config gap found
-2026-08-22 — `presence_penalty`/`top_k` were missing from this file relative
-to the base model's own documented sampling recommendation, now added (see
-this file's own header comment) after measurably suppressing a genuine
-repetition-loop failure on one instance. **Full-pilot re-validation with
-that sampling fix is the next concrete step** before any new score can be
-cited.
+The 17 remaining `ContextWindowExceeded` instances were a candidate list for
+two things investigated in `t-timms/kat-coder-16gb-serving-experiments`: (1)
+the chat-template experiment (mixed/inconclusive on a diverse sample — see
+that repo's `chat-template/NOTES.md`, not adopted) and (2) a real config gap
+found 2026-08-22 — `presence_penalty`/`top_k` were missing from this file
+relative to the base model's own documented sampling recommendation. Both
+were full-pilot re-validated on 2026-08-23 and both regressed the score —
+see the dated RESULT entry below for presence_penalty specifically. Neither
+is adopted; `kat_overrides_sota.yaml` (this config, unmodified) remains the
+best validated agentic serving config.
 
 ## CORRECTION (2026-08-22): reverted a premature default change, split into a candidate file
 
@@ -183,6 +182,47 @@ two-metric-spelling bug its own comment already described for `run_task`
 (`pass@1,...` vs `pass_at_1,...`) but the fix was never applied to the
 summary loop itself - silently printed a blank MBPP+ line even on a
 successful run. Fixed.
+
+## RESULT (2026-08-23): presence_penalty/top_k full-pilot — regresses the score, not promoted
+
+Full 50-instance pilot with `KAT_CONFIG=kat_overrides_sota_presence_penalty.yaml`,
+identical setup to the 52.0% baseline run in every other respect
+(`max_model_len 49152`, `max_num_seqs 2`, `step_limit 65`) via the same
+`run_pilot_all.sh`. Confirmed before trusting the comparison: `--shuffle`
+uses a hardcoded `random.seed(42)` in mini-swe-agent's own source
+(`filter_instances()`), so both this run and the original 52.0% run drew
+the identical 50 instances in the identical order — a valid paired
+comparison, not confounded by different instance composition. Graded with
+the official harness, artifact-verified (not exit-code-trusted):
+
+| | baseline (`kat_overrides_sota.yaml`) | presence_penalty candidate |
+|---|---:|---:|
+| Resolved | **26/50 = 52.0%** | **24/50 = 48.0%** |
+| Submitted | 32 | 28 |
+| ContextWindowExceeded | 17 | 14 |
+| LimitsExceeded | ~0 | 8 |
+| Resolved-of-completed | 81.25% | 85.7% |
+
+**Regression, not an improvement — 2 fewer resolved instances net.**
+Mechanism is consistent with the single-instance test and the
+`agentic-quality/` prompt-track findings that already flagged this exact
+failure mode: presence_penalty modestly reduced context-ceiling failures
+(17→14) and even slightly improved quality on attempts that did complete
+(85.7% vs 81.25% resolved-of-completed) — but it caused far more instances
+to exhaust the fixed 65-step turn budget before producing any patch at all
+(`LimitsExceeded` 0→8). Suppressing literal repetition didn't reduce total
+turns taken; it redirected them into exploring different (still
+non-committal) variations instead of the same one. The quality gain on
+completions doesn't offset the drop in how many instances complete at all.
+
+**Not promoted. `kat_overrides_sota.yaml` is unchanged and remains the best
+validated config.** This is the promotion-discipline (see the CORRECTION
+entry above) working as designed: the shipped default was never at risk
+during the ~24 hours this candidate looked promising on single-instance
+evidence, because it was never merged into the file backing the cited
+number. `kat_overrides_sota_presence_penalty.yaml` stays in the repo as a
+documented negative result, not deleted — the same treatment as W4A4 and
+the GPTQ requantization.
 
 ## PLAN (2026-08-22): GPTQ-based NVFP4A16 requantization — scoped, not yet run [SUPERSEDED BY RESULT ABOVE]
 

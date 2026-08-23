@@ -234,6 +234,20 @@ Full writeup:
 [`ROADMAP.md`](https://github.com/t-timms/kat-coder-nvfp4/blob/main/ROADMAP.md)'s
 RESULT section in the release repo.
 
+## GPTQ: a tested rounding variant, not a recommended alternative
+
+A third build, [`Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16-GPTQ`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16-GPTQ),
+re-quantizes the same pruned checkpoint to the identical NVFP4A16 scheme
+using GPTQ rounding instead of this release's round-to-nearest (RTN) — same
+size (12.4512 GiB, exact match), same kernel, only the quantization
+algorithm differs. Unlike W4A4 above, this is **not published as an
+alternative worth choosing** — a paired McNemar test found no statistically
+significant difference from this release on either HumanEval+ (p=0.68) or
+MBPP+ (p=0.81), and there's no distinct execution-path reason to prefer it
+the way there is for W4A4. It's published for completeness and independent
+verification of that null result, not as a recommendation. Full writeup on
+that card and in `ROADMAP.md`'s RESULT section in the release repo.
+
 ## License
 
 Apache 2.0, inherited from the base model `Kwaipilot/KAT-Coder-V2.5-Dev` and

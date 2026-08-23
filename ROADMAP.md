@@ -174,8 +174,12 @@ having very little room left to improve (the RTN baseline's own numbers,
 90.9%/89.9%, are already close to ceiling for a 3B-active model), not by
 GPTQ underperforming its documented advantage. `quantize_kat_gptq.py`,
 `kat-50pct-nvfp4a16-gptq-stripped/`, and the eval artifacts
-(`~/eval-suite-gptq/`) are kept on disk as a documented negative result,
-same as the earlier W4A4 throughput finding - not deleted, not published.
+(`~/eval-suite-gptq/`) are kept as a documented negative result. Unlike
+the earlier W4A4 throughput finding, the checkpoint itself is published -
+[`Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16-GPTQ`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16-GPTQ)
+- for completeness and independent verification of this null result, not
+as a recommended alternative to the primary release. Local copies were
+deleted once the upload was verified byte-exact.
 
 Also fixed along the way: `eval_suite.sh`'s summary loop had the same
 two-metric-spelling bug its own comment already described for `run_task`

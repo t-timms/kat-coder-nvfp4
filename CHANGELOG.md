@@ -39,10 +39,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   18/378 — both underpowered to fully rule out a small real effect, but
   neither showing one). Did not clear the bar set before running (accuracy
   improvement required before any SWE-bench testing), so not shipped, not
-  the default. Kept on disk as a documented negative result, same treatment
-  as the earlier W4A4 throughput finding. Full writeup, including why a null
-  result here is plausible (this model's RTN baseline may already be close
-  to its accuracy ceiling) rather than contradicting the literature:
+  the default. Published as [`Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16-GPTQ`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16-GPTQ)
+  for completeness and independent verification of this null result, not as
+  a recommended alternative to the primary release. Full writeup, including
+  why a null result here is plausible (this model's RTN baseline may already
+  be close to its accuracy ceiling) rather than contradicting the literature:
   `ROADMAP.md`'s RESULT entry.
 
 - **Added `presence_penalty` and `top_k` to `kat_overrides_sota.yaml`,

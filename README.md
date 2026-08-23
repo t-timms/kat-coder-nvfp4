@@ -67,7 +67,7 @@ Status below.
 | `presence_penalty`/`top_k`, completing the model's documented sampling recommendation | tried — full-pilot validated 2026-08-23, **regresses the score** (24/50 = 48.0% vs. the shipped 26/50 = 52.0%, same 50 instances via mini-swe-agent's fixed shuffle seed). More instances hit `LimitsExceeded` (0→8) than were saved from `ContextWindowExceeded` (17→14). Not promoted — `kat_overrides_sota.yaml` unchanged. See `ROADMAP.md`'s RESULT entry |
 | Release checkpoint on Hugging Face | published — [`Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16) |
 | W4A4 (native FP4 kernels) alternative build | published, see below |
-| GPTQ-based NVFP4A16 requantization (same size, different rounding algorithm) | tried — clean run, exact size match (12.4512 GiB), but the accuracy suite showed **no statistically significant difference** vs. the shipped RTN model (paired McNemar, both benchmarks). Not shipped, not the default — see `ROADMAP.md`'s RESULT entry |
+| GPTQ-based NVFP4A16 requantization (same size, different rounding algorithm) | tried — clean run, exact size match (12.4512 GiB), but the accuracy suite showed **no statistically significant difference** vs. the shipped RTN model (paired McNemar, both benchmarks). Not the default — published separately as [`Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16-GPTQ`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16-GPTQ) for transparency/independent verification, not as a recommended alternative — see `ROADMAP.md`'s RESULT entry |
 
 ## W4A4: an alternative quantization strategy
 

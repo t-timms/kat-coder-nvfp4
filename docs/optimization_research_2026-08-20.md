@@ -209,7 +209,21 @@ at 32K (no context shrink), then A/Bs with drift check.
 1. 60% REAP experiment on KAT (this branch) for the ratio data.
 2. SOTA build: Ornith-1.5-35B-A3B + 50% + GPTQ-NVFP4A16 + v22.2 Sharp template
    + vLLM 0.26.0 + qwen3_coder parser -> pilot-5 vs the 50% KAT baseline.
-3. GATE A: FA2 vs FA4 (bench_ab.sh, 5 interleaved reps).
+3. ~~GATE A: FA2 vs FA4 (bench_ab.sh, 5 interleaved reps).~~ **RESOLVED
+   2026-08-23, no benchmark needed.** This table's "FA4 default (SM120)"
+   assumption above was wrong for our specific card - checked directly
+   against `vllm/platforms/cuda.py` and `fa_utils.py`: the FA4-preferred
+   default only fires for `device_capability.major == 10`; our card reports
+   `(12, 0)` (confirmed via `torch.cuda.get_device_capability`), which falls
+   through to FA2 as the nominal default, not FA4. More decisively: the live
+   server log from tonight's production run shows FLASH_ATTN isn't even in
+   the final candidate list vLLM builds for this model
+   (`Using FLASHINFER attention backend out of potential backends:
+   ['FLASHINFER', 'TRITON_ATTN']`) - it's excluded as incompatible before
+   FA2-vs-FA4 would ever matter, most likely due to the hybrid
+   Gated-DeltaNet architecture. vLLM already auto-selects FlashInfer, which
+   is the kernel this doc's own §5 already predicted should win for our
+   decode-dominated workload. Nothing to gate; nothing to benchmark.
 4. GATE M: MTP (viable after the Ornith switch; measure acceptance on NVFP4 path).
 5. GATE D: DFlash when vLLM PR #52816 merges (runtime-checked).
 6. FlashInfer b12x FP4 GEMM probe (decode GEMM; after FA/MTP).

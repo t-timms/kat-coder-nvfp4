@@ -8,10 +8,18 @@ local agentic coding model inside 16 GB of consumer VRAM, on an RTX 5070 Ti (SM1
 
 Pipeline: REAP expert pruning at 50 percent, then NVFP4 quantization, served by vLLM.
 
-Two checkpoints are published: [`KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16)
-(weight-only, this release's default — see Results below) and
-[`KAT-Coder-V2.5-Dev-REAP-50-NVFP4-W4A4`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4-W4A4)
-(weights + activations, native FP4 kernels — see [W4A4](#w4a4-an-alternative-quantization-strategy) below).
+Published checkpoints: [`REAP-50-NVFP4A16`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16)
+(weight-only, this release's default — see Results below),
+[`REAP-50-NVFP4-W4A4`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4-W4A4)
+(weights + activations, native FP4 kernels — see [W4A4](#w4a4-an-alternative-quantization-strategy) below),
+[`REAP-50-NVFP4A16-GPTQ`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16-GPTQ)
+(documented negative result, kept for verification),
+[`REAP-50-GGUF`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-GGUF)
+(Q4_K_M / Q5_K_M / Q6_K / Q8_0, llama.cpp / LM Studio — shipped 2026-08-29 from a fresh
+renorm-on REAP re-run, `--no-mtp` convert, `llama-server`-verified) and
+[`REAP-50-bf16`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-bf16)
+(pruned source, for AWQ / EXL2 / MLX / custom GGUF). Standing rule: every model
+ships GGUF + bf16 alongside NVFP4; MLX is Mac-gated (this box can't produce it).
 
 ## Results
 
@@ -67,6 +75,9 @@ Status below.
 | `presence_penalty`/`top_k`, completing the model's documented sampling recommendation | tried — full-pilot validated 2026-08-23, **regresses the score** (24/50 = 48.0% vs. the shipped 26/50 = 52.0%, same 50 instances via mini-swe-agent's fixed shuffle seed). More instances hit `LimitsExceeded` (0→8) than were saved from `ContextWindowExceeded` (17→14). Not promoted — `kat_overrides_sota.yaml` unchanged. See `ROADMAP.md`'s RESULT entry |
 | Release checkpoint on Hugging Face | published — [`Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16) |
 | W4A4 (native FP4 kernels) alternative build | published, see below |
+| GGUF for reach (llama.cpp / LM Studio) | **done 2026-08-29** — fresh renorm-on REAP re-run → `--no-mtp` convert → Q4_K_M/Q5_K_M/Q6_K/Q8_0, `llama-server`-verified. [`Ttimms/KAT-Coder-V2.5-Dev-REAP-50-GGUF`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-GGUF) (Ollama's bundled llama.cpp is still too old for `qwen3_5_moe`) |
+| Pruned bf16 source published | **done 2026-08-29** — [`Ttimms/KAT-Coder-V2.5-Dev-REAP-50-bf16`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-bf16), 38 GB, for anyone making their own AWQ / EXL2 / MLX / custom GGUF |
+| MLX build | blocked — `mlx-lm` is Apple-Silicon only; this box can't produce it |
 | GPTQ-based NVFP4A16 requantization (same size, different rounding algorithm) | tried — clean run, exact size match (12.4512 GiB), but the accuracy suite showed **no statistically significant difference** vs. the shipped RTN model (paired McNemar, both benchmarks). Not the default — published separately as [`Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16-GPTQ`](https://huggingface.co/Ttimms/KAT-Coder-V2.5-Dev-REAP-50-NVFP4A16-GPTQ) for transparency/independent verification, not as a recommended alternative — see `ROADMAP.md`'s RESULT entry |
 
 ## W4A4: an alternative quantization strategy

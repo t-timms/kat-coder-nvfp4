@@ -490,13 +490,16 @@ checkpoint but weren't tested against W4A4's different kernel path.
     question entirely — a token-efficiency lever, not a kernel-throughput
     one, and could stack with whichever checkpoint gets used.
 
-- GGUF quant for reach (llama.cpp/Ollama/LM Studio compatible) — current
-  model has 74 HF downloads (verified 2026-08-21); NVFP4A16 needs vLLM +
-  Blackwell specifically, which caps the addressable audience. Re-verified
-  2026-08-21, correcting an error introduced earlier in this same session
-  (see `docs/optimization_research_2026-08-21.md` addendum for the full
-  story): the same author (`gbuzhf`) publishes two distinct GGUF repos for
-  this base model —
+- **GGUF quant for reach — DONE 2026-08-29.** `Ttimms/KAT-Coder-V2.5-Dev-REAP-50-GGUF`
+  (Q4_K_M / Q5_K_M / Q6_K / Q8_0) + `Ttimms/KAT-Coder-V2.5-Dev-REAP-50-bf16` (pruned
+  source, 38 GB) are live. Built from a fresh renorm-on REAP re-run (the original
+  pruned bf16 had been deleted): `convert_hf_to_gguf.py --no-mtp` (KAT base already has
+  `mtp_num_hidden_layers: 0`, so no MTP-strip needed — unlike Ornith), verified via
+  `llama-server` (clean Fibonacci gen). Ollama's *bundled* llama.cpp is still too old
+  for `qwen3_5_moe`; LM Studio / current llama.cpp work now. Standing rule going
+  forward: every model ships GGUF + bf16 alongside NVFP4 (MLX Mac-gated). The
+  prior-art comparison this bullet used to plan around still stands — the same author
+  (`gbuzhf`) publishes two distinct GGUF repos for this base model —
   [`KAT-Coder-V2.5-Dev-MTP-GGUF`](https://huggingface.co/gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF)
   (45.3K downloads, full unpruned model, MTP head grafted from
   Qwen3.6-35B-A3B) and

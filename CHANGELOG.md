@@ -9,6 +9,15 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **GGUF + pruned-bf16 releases (2026-08-29).** `Ttimms/KAT-Coder-V2.5-Dev-REAP-50-GGUF`
+  (Q4_K_M / Q5_K_M / Q6_K / Q8_0) and `Ttimms/KAT-Coder-V2.5-Dev-REAP-50-bf16` (pruned
+  source, 38 GB) are now published — NVFP4A16 needs vLLM + Blackwell, which caps the
+  audience; GGUF is the reach artifact and bf16 lets others make their own quants. Built
+  from a fresh renorm-on REAP re-run (the original pruned bf16 had been deleted):
+  `convert_hf_to_gguf.py --no-mtp` (KAT base already carries `mtp_num_hidden_layers: 0`),
+  verified via `llama-server`. Ollama's bundled llama.cpp is still too old for
+  `qwen3_5_moe`; LM Studio / current llama.cpp work. Standing rule going forward: every
+  model ships GGUF + bf16 alongside NVFP4 (MLX is Mac-gated).
 - **Full-pilot tested `presence_penalty`/`top_k` — regresses the score, not
   promoted.** 50-instance pilot on the identical instance set as the 52.0%
   baseline (`--shuffle` is deterministically seeded in mini-swe-agent, so

@@ -449,6 +449,95 @@ revisit the two SM120-specific decode-throughput fixes noted in
 `docs/optimization_research_2026-08-21.md` §1 — those didn't help the A16
 checkpoint but weren't tested against W4A4's different kernel path.
 
+## PLAN (2026-09-01): path to best-in-class 16 GB agentic coder — queued, not started
+
+Goal, stated plainly: the best agentic coding model that fits a single 16 GB
+consumer card, measured on benchmarks **and** real-world use. Queued behind the
+current unrelated project; nothing below has been run.
+
+**Where this stands today (honest, so the plan targets the real gap):**
+
+- SWE-bench Verified, the one apples-to-apples comparison that exists: 52.0%
+  (26/50, `kat_overrides_sota.yaml`, official grading) vs. Devstral Small 2512's
+  56.4% under the same `mini-swe-agent` bash-only scaffold. Behind by 4.4 points
+  on n=50 — inside the ~+/-14-point binomial CI at that sample size, so "trails
+  by a margin within noise," not a settled rank.
+- Pure code-gen: HumanEval+ 90.9% / MBPP+ 89.9% (shipped RTN A16) — top-tier for
+  anything in 16 GB.
+- Documentation / eval rigor: no other 16 GB-class coding model publishes
+  SWE-bench + HumanEval+ + MBPP+ with confidence intervals and failure-mode
+  breakdowns. This is the current defensible claim.
+- Real-world use: **no evidence collected.** One HF thank-you comment. No
+  multi-benchmark table, no dogfood log. Cannot currently claim it.
+
+**Diagnosis (from the 2026-08-22 RESULT above):** the gap is not capability —
+81.25% resolve-of-completed. 17/50 die at `ContextWindowExceeded` on the 49K
+ceiling before submitting a patch. That is a KV-budget ceiling forced by the
+16 GB card, not a reasoning deficit.
+
+**Already done — do not re-tread as "new levers":** fp8 KV cache is on
+(`run_pilot_all.sh` / `serve_kat.sh`, `--kv-cache-dtype fp8`). The 5,000-char
+observation truncation from `kat_overrides_context_managed.yaml` is already
+adopted into the SOTA config. `presence_penalty`/`top_k` was full-pilot tested
+and regressed (RESULT 2026-08-23).
+
+### Ladder, cheapest first — each gate is "re-measure before proceeding"
+
+1. **Close the open cheap levers.** Full-pilot validate
+   `kat_overrides_context_managed.yaml` (`max_tokens` 3072->1024 + step_limit 30)
+   against the 52.0% baseline — never actually run, only reasoned about; its own
+   header flags the <think>-truncation risk, so it needs the measurement, not
+   more argument. Also the two Longer-horizon items below: the Qwen-Sharp chat
+   template (one-file swap, targets the <think> token tax directly) and, more
+   speculatively, FreeToken expert-offload (could serve a lighter-pruned or
+   unpruned base in 16 GB, skipping the REAP accuracy tax entirely).
+2. **Benchmark breadth.** The 50-instance SWE-bench subset is too thin to rank
+   on. Add: full SWE-bench Verified (500); a fresher / less-contaminated set
+   (SWE-bench Live or Multimodal); the **Aider polyglot leaderboard** (the
+   community's trusted coding-assistant benchmark — measures edit-format
+   reliability, a real-world failure mode); **Terminal-Bench** for agentic
+   tool-use. Same scaffold, same hardware, same session for every entry.
+3. **Real-world evidence — the missing half.** Serve the checkpoint through the
+   vLLM OpenAI endpoint and use it as the daily coding assistant for 2-3 weeks
+   in a real agent harness (aider / opencode / Claude-Code-style). Log every
+   failure with the task shape. This produces honest card content and a signal
+   SWE-bench cannot give.
+4. **Head-to-head table — this IS the differentiator.** KAT-Coder REAP-50 vs.
+   Devstral Small 2512 vs. Qwen3-Coder-30B-A3B (4-bit), identical scaffold,
+   identical GPU, same session, >=200 SWE-bench instances + the Aider set.
+   Nobody else in this class publishes a controlled cross-model table. This is
+   what turns "trails by noise" into a number.
+5. **Base decision gate.** After 1-4:
+   - Clears 56.4% same-scaffold -> commit to KAT REAP-50, ship the updated card.
+   - Doesn't -> quantize **Devstral Small 2512** to NVFP4 with this repo's eval
+     discipline. Apache-2.0, already fits 16 GB, already beats the bar, and
+     nobody has published a rigorously-evaluated NVFP4 of it. Faster route to
+     "best-documented 16 GB agentic coder" than grinding this base. KAT REAP-50
+     stays as the "only evaluated 16 GB KAT-Coder" niche entry it already is.
+     (Distinct from the Ornith-1.5-35B-A3B swap, tracked in the private
+     `sota-ornith-build` branch.)
+6. **Training levers — only if 1-5 leave a gap worth closing.**
+   - SFT on successful agentic traces: self-distill from the 26 SWE-bench wins
+     plus a teacher model's `mini-swe-agent` runs. Targets patch-format
+     reliability and completion rate. Moderate cost.
+   - GRPO on agentic coding with a test-pass reward: real project. Long
+     trajectory rollouts on a 17.5B MoE inside 16 GB are far more expensive than
+     a 4B GRPO run. Last resort for the final point or two.
+
+### Claim discipline
+
+Until the step-4 table exists, the only defensible public claim is: *"competitive
+with the best 16 GB-class agentic coders on SWE-bench Verified under an identical
+local scaffold; the only one in the class with published multi-benchmark results
+and confidence intervals."* Not "best," not "top N in the world" — those are
+unfalsifiable without a ranked field and cost the credibility the eval rigor
+buys.
+
+### Timeline
+
+One base, done properly — cheap levers + 4-5 benchmarks + real-world writeup +
+the cross-model table — is a ~3-4 week slow-lane effort, not a weekend.
+
 ## Longer-horizon / not scheduled
 
 - **Candidate performance levers surfaced 2026-08-22, not yet tested against

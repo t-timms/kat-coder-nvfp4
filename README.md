@@ -21,6 +21,39 @@ renorm-on REAP re-run, `--no-mtp` convert, `llama-server`-verified) and
 (pruned source, for AWQ / EXL2 / MLX / custom GGUF). Standing rule: every model
 ships GGUF + bf16 alongside NVFP4; MLX is Mac-gated (this box can't produce it).
 
+## Architecture
+
+```mermaid
+graph TD
+    Base["Kwaipilot/KAT-Coder-V2.5-Dev<br/>Qwen3.5 MoE - 256 experts - ~69 GB bf16 - 69.40 SWE-bench (claimed)"]
+
+    subgraph Build ["Build pipeline - RTX 5070 Ti, SM120"]
+        REAP["REAP expert prune 50%<br/>256 -> 128 experts + router-renormalization fix (upstreamed)"]
+        Strip["Strip vision tower<br/>declaration + 333 untrained tensors (0.83 GiB)"]
+        Quant["NVFP4A16 quantize<br/>compressed-tensors - weight-only - data-free - 82 s"]
+    end
+
+    subgraph HF ["Published on Hugging Face"]
+        A16["REAP-50-NVFP4A16 - 12.45 GiB<br/>default - Marlin NVFP4 kernel"]
+        W4A4["REAP-50-NVFP4-W4A4<br/>weights+activations - native FP4 kernels"]
+        GPTQ["REAP-50-NVFP4A16-GPTQ<br/>documented null result"]
+        GGUF["REAP-50-GGUF<br/>Q4_K_M / Q5_K_M / Q6_K / Q8_0"]
+        BF16["REAP-50-bf16<br/>pruned source for AWQ / EXL2 / MLX"]
+    end
+
+    subgraph Serve ["Serving & evaluation"]
+        vLLM["vLLM 0.20.2 - SM120<br/>CUDA graphs PIECEWISE - prefix caching (45x) - 49K ctx"]
+        Bench["HumanEval+ 89.0% - MBPP+ 90.5%<br/>SWE-bench Verified 52.0% (mini-swe-agent)"]
+    end
+
+    Base --> REAP --> Strip --> Quant --> A16
+    Strip --> BF16
+    BF16 -. re-quantize .-> W4A4
+    BF16 -. re-quantize .-> GPTQ
+    BF16 -. convert .-> GGUF
+    A16 --> vLLM --> Bench
+```
+
 ## Results
 
 | metric | value | conditions |

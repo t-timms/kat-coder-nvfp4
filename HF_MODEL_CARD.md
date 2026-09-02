@@ -62,8 +62,8 @@ Forced by arithmetic on a 16 GB card, not a tuning choice:
 | **REAP 50% + NVFP4** | **12.45 GiB** | **yes** |
 
 Supporting evidence: [Half the Experts, All the Code](https://arxiv.org/html/2607.16721)
-pruned Qwen3.6-35B-A3B, this model's own base, at 50% with no statistically
-detectable loss on its primary code benchmark.
+pruned Qwen3.6-35B-A3B — this base model's size-class cousin — at 50% with no
+statistically detectable loss on its primary code benchmark.
 
 ## SWE-bench Verified — read before citing the 52.0% figure alone
 
@@ -225,13 +225,16 @@ this model's Marlin dequant-to-bf16 fallback. Measured properly (5
 interleaved runs per arm, median + range, under both isolated eager mode
 and the same PIECEWISE CUDA-graph configuration this model actually serves
 with): W4A4 decodes at 119.2 tok/s vs this checkpoint's 142.5 tok/s (0.84x)
+— both figures from that interleaved A/B harness, which runs slightly under
+the 149.5 tok/s headline above (measured separately at 512/256); the
+difference is measurement configuration, not two different builds —
 with a mixed accuracy picture (HumanEval 92.07% vs 95.7%, HumanEval+ 89.02%
 vs 90.9%, MBPP+ 91.01% vs 89.9% — that last one favors W4A4). This
 checkpoint is faster on this hardware and is what we default to; the W4A4
 build is a legitimate alternative if the native FP4 execution path matters
 more for your use case. Only single-stream (batch=1) decode was measured.
 Full writeup:
-[`ROADMAP.md`](https://github.com/t-timms/kat-coder-nvfp4/blob/main/ROADMAP.md)'s
+[`ROADMAP.md`](https://github.com/t-timms/kat-coder-nvfp4/blob/master/ROADMAP.md)'s
 RESULT section in the release repo.
 
 ## GPTQ: a tested rounding variant, not a recommended alternative

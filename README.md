@@ -28,7 +28,7 @@ graph TD
     Base["Kwaipilot/KAT-Coder-V2.5-Dev<br/>Qwen3.5 MoE - 256 experts - ~69 GB bf16 - 69.40 SWE-bench (claimed)"]
 
     subgraph Build ["Build pipeline - RTX 5070 Ti, SM120"]
-        REAP["REAP expert prune 50%<br/>256 -> 128 experts + router-renormalization fix (upstreamed)"]
+        REAP["REAP expert prune 50%<br/>256 -> 128 experts + router-renormalization fix (upstream PR #92, open)"]
         Strip["Strip vision tower<br/>declaration + 333 untrained tensors (0.83 GiB)"]
         Quant["NVFP4A16 quantize<br/>compressed-tensors - weight-only - data-free - 82 s"]
     end
@@ -94,7 +94,7 @@ Status below.
 | stage | status |
 |---|---|
 | REAP 50% prune (Qwen3.5 MoE support added to reap fork) | done |
-| Router renormalization fix | done, committed for upstream |
+| Router renormalization fix | done; upstream PR [`egesabanci/reap-cuda#92`](https://github.com/egesabanci/reap-cuda/pull/92) (open) |
 | NVFP4A16 quantization (data-free, 82 s) | done |
 | Vision tower removed — declaration and weights | done |
 | Speed benchmarked (149.5 tok/s, n=5) | done |

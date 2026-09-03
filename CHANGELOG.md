@@ -7,6 +7,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-03
+
 ### Added
 
 - **GGUF + pruned-bf16 releases (2026-08-29).** `Ttimms/KAT-Coder-V2.5-Dev-REAP-50-GGUF`
